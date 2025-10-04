@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -78,7 +78,7 @@
 
     <script>
         // **********************************************
-        // KREEDENTIAL ANDA SUDAH DIPASANG DI SINI
+        // KREEDENTIAL ANDA
         // **********************************************
         const SUPABASE_URL = 'https://slyuhkzzkovgpwdqwfaw.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNseXVoa3p6a292Z3B3ZHF3ZmF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NDY5MzYsImV4cCI6MjA3NTEyMjkzNn0.u5WKU91G-cT3pUUrzTVuMR-g3HWadsl9mlcQXMA4DYM'; 
@@ -96,11 +96,11 @@
             messageElement.classList.remove('d-none');
         };
         
-        const redirectToDashboard = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            if (user) {
-                const userRole = user.user_metadata.role;
+        // --- SOLUSI FINAL: SESSION LISTENER ---
+        // Ini akan terpicu secara otomatis saat sesi dibuat (setelah login)
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                const userRole = session.user.user_metadata.role;
                 let redirectPage;
 
                 if (userRole === 'prodi') {
@@ -108,22 +108,15 @@
                 } else if (userRole === 'kemahasiswaan') {
                     redirectPage = 'dashboard-kemahasiswaan.html';
                 }
-                
+
                 if (redirectPage) {
+                    // Gunakan replace() untuk mencegah browser menyimpan riwayat loop
                     window.location.replace(redirectPage);
-                    return true;
                 }
             }
-            return false;
-        };
+        });
 
-        const checkUrlHash = async () => {
-            await supabase.auth.getSession();
-            await redirectToDashboard();
-        };
-
-        checkUrlHash();
-
+        // --- Logika Form Submit ---
         form.addEventListener('submit', async (event) => {
             event.preventDefault(); 
 
@@ -139,7 +132,7 @@
             
             showMessage('Memproses login...', 'info');
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
@@ -148,38 +141,32 @@
                 console.error(error);
                 showMessage(`Login Gagal: Username atau Password salah.`, 'danger');
             } else {
-                const userRole = data.user.user_metadata.role;
-                let redirectPage = 'index.html'; 
-                
-                if (userRole === 'kemahasiswaan') {
-                    redirectPage = 'dashboard-kemahasiswaan.html';
-                } else if (userRole === 'prodi') {
-                     redirectPage = 'dashboard-prodi.html';
-                } else {
-                     showMessage('Login Gagal: Peran pengguna tidak valid.', 'danger');
-                     await supabase.auth.signOut(); 
-                     return;
-                }
-                
-                showMessage(`Login Berhasil sebagai ${userRole.toUpperCase()}! Mengalihkan...`, 'success');
-                
-                window.location.replace(redirectPage); 
+                // Setelah login sukses, onAuthStateChange akan terpicu dan menangani pengalihan
+                // Tidak perlu kode redirect di sini
+                showMessage(`Login Berhasil! Mengalihkan...`, 'success');
             }
         });
         
-        const checkSession = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const userRole = user.user_metadata.role;
-                if (userRole === 'prodi') {
-                    window.location.replace('dashboard-prodi.html');
-                } else if (userRole === 'kemahasiswaan') {
-                    window.location.replace('dashboard-kemahasiswaan.html');
-                }
-            }
+        // --- Pemeriksaan Sesi Awal (Mencegah Loop) ---
+        // Jika pengguna sudah login dan kembali ke index, segera alihkan
+        const checkInitialSession = async () => {
+             const { data: { user } } = await supabase.auth.getUser();
+             if (user) {
+                 const userRole = user.user_metadata.role;
+                 let redirectPage;
+                 
+                 if (userRole === 'prodi') {
+                    redirectPage = 'dashboard-prodi.html';
+                 } else if (userRole === 'kemahasiswaan') {
+                    redirectPage = 'dashboard-kemahasiswaan.html';
+                 }
+                 
+                 if (redirectPage) {
+                     window.location.replace(redirectPage);
+                 }
+             }
         };
-        checkSession();
-
+        checkInitialSession(); 
     </script>
 </body>
 </html>
