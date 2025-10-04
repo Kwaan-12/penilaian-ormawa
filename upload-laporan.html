@@ -1,33 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Upload Laporan | Prodi</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     </head>
 
 <body>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <script>
         // **********************************************
         // KREEDENTIAL ANDA SUDAH DIPASANG DI SINI
         // **********************************************
         const SUPABASE_URL = 'https://slyuhkzzkovgpwdqwfaw.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNseXVoa3p6a292Z3B3ZHF3ZmF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NDY5MzYsImV4cCI6MjA3NTEyMjkzNn0.u5WKU91G-cT3pUUrzTVuMR-g3HWadsl9mlcQXMA4DYM'; 
+        const bucketName = 'upload-laporan'; 
         
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
+        // ... (Logika DOM dan form) ...
+
         // --- OTENTIKASI DAN PENGAMANAN HALAMAN (LOGIKA PERBAIKAN FINAL) ---
         const checkAuthAndRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
-                // Jika tidak login, kembali ke halaman login
                 window.location.replace('index.html');
                 return;
             }
@@ -35,15 +27,15 @@
             const userRole = user.user_metadata.role;
             
             if (userRole !== 'prodi') {
-                // Jika bukan PRODI, hapus sesi dan kembali ke login
                 await supabase.auth.signOut();
                 window.location.replace('index.html');
                 return;
             }
-            
-            // TODO: Tambahkan logika upload file di sini (jika belum ada)
+            // Lanjutkan ke logika upload jika role benar (PRODI)
         };
         checkAuthAndRole();
+
+        // ... (Logika uploadForm.addEventListener Anda di sini) ...
     </script>
 </body>
 </html>
