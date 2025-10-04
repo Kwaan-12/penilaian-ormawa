@@ -94,9 +94,45 @@
             messageElement.className = `alert alert-${type} mt-3`;
             messageElement.classList.remove('d-none');
         };
+        
+        // --- Fungsi Pengalihan Role ---
+        const redirectToDashboard = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (user) {
+                const userRole = user.user_metadata.role;
+                let redirectPage;
 
+                if (userRole === 'prodi') {
+                    redirectPage = 'dashboard-prodi.html';
+                } else if (userRole === 'kemahasiswaan') {
+                    redirectPage = 'dashboard-kemahasiswaan.html';
+                }
+                
+                // Gunakan replace() untuk mencegah browser menyimpan riwayat loop
+                if (redirectPage) {
+                    window.location.replace(redirectPage);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // 1. Cek Sesi Saat Ini di URL (Penting untuk menangani redirect Supabase)
+        const checkUrlHash = async () => {
+            // Ini akan memanggil Supabase.auth.getSession() secara internal dan membersihkan URL hash
+            await supabase.auth.getSession();
+            // Kemudian, cek apakah sesi valid dan alihkan
+            await redirectToDashboard();
+        };
+
+        // Panggil ini segera sebelum form submit
+        checkUrlHash();
+
+
+        // 2. Logika Form Submit
         form.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Menghentikan pengiriman form default
+            event.preventDefault();
 
             const email = usernameInput.value.trim();
             const password = passwordInput.value;
@@ -110,7 +146,7 @@
             
             showMessage('Memproses login...', 'info');
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
@@ -119,41 +155,17 @@
                 console.error(error);
                 showMessage(`Login Gagal: Username atau Password salah.`, 'danger');
             } else {
-                const userRole = data.user.user_metadata.role;
-                let redirectPage = 'index.html'; 
+                showMessage(`Login Berhasil! Mengalihkan...`, 'success');
                 
-                if (userRole === 'kemahasiswaan') {
-                    redirectPage = 'dashboard-kemahasiswaan.html';
-                } else if (userRole === 'prodi') {
-                     redirectPage = 'dashboard-prodi.html';
-                } else {
-                     showMessage('Login Gagal: Peran pengguna tidak valid.', 'danger');
-                     await supabase.auth.signOut(); 
-                     return;
+                // Panggil pengalihan setelah login sukses
+                const redirected = await redirectToDashboard();
+                
+                // Fallback jika redirect gagal (ini seharusnya tidak terjadi)
+                if (!redirected) {
+                    showMessage('Pengalihan gagal. Coba bersihkan cache browser Anda.', 'danger');
                 }
-                
-                showMessage(`Login Berhasil sebagai ${userRole.toUpperCase()}! Mengalihkan...`, 'success');
-                
-                // PERBAIKAN FINAL: Pengalihan segera menggunakan replace()
-                window.location.replace(redirectPage); 
             }
         });
-        
-        const checkSession = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const userRole = user.user_metadata.role;
-                if (userRole === 'prodi') {
-                    // PERBAIKAN FINAL: Gunakan replace() untuk sesi yang sudah ada
-                    window.location.replace('dashboard-prodi.html');
-                } else if (userRole === 'kemahasiswaan') {
-                    // PERBAIKAN FINAL: Gunakan replace() untuk sesi yang sudah ada
-                    window.location.replace('dashboard-kemahasiswaan.html');
-                }
-            }
-        };
-        checkSession();
-
     </script>
 </body>
 </html>
