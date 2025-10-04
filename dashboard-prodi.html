@@ -274,23 +274,27 @@
             totalLaporanBulanIniEl.textContent = `+${laporanBulanIni} Bulan Ini`;
         }
         
-        // --- PENGAMANAN HALAMAN DAN PEMERIKSAAN ROLE ---
+        // --- PENGAMANAN HALAMAN DAN PEMERIKSAAN ROLE (LOGIKA PERBAIKAN) ---
         const checkAuthAndRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
-                // *** PERBAIKAN PENGALIHAN KE NAMA FILE BARU (index.html sekarang adalah login) ***
+                // Jika tidak login, kembali ke halaman login baru (index.html)
                 window.location.href = 'index.html'; 
                 return;
             }
             
             const userRole = user.user_metadata.role;
+            
+            // Verifikasi Role (Harusnya PRODI)
             if (userRole !== 'prodi') {
+                // Jika login tapi bukan PRODI (kemungkinan KEMAHASISWAAN), alihkan ke dashboard mereka
                 alert('Akses Ditolak. Anda bukan bagian PRODI. Mengalihkan ke Dashboard Verifikasi.');
                 window.location.href = 'dashboard-kemahasiswaan.html'; 
                 return;
             }
 
+            // Jika role benar (PRODI), muat data
             loadStatistics();
         };
 
