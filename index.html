@@ -134,9 +134,8 @@
                 
                 showMessage(`Login Berhasil sebagai ${userRole.toUpperCase()}! Mengalihkan...`, 'success');
                 
-                setTimeout(() => {
-                    window.location.href = redirectPage; 
-                }, 1000);
+                // PERBAIKAN FINAL: Pengalihan segera menggunakan replace()
+                window.location.replace(redirectPage); 
             }
         });
         
@@ -145,9 +144,11 @@
             if (user) {
                 const userRole = user.user_metadata.role;
                 if (userRole === 'prodi') {
-                    window.location.href = 'dashboard-prodi.html';
+                    // PERBAIKAN FINAL: Gunakan replace() untuk sesi yang sudah ada
+                    window.location.replace('dashboard-prodi.html');
                 } else if (userRole === 'kemahasiswaan') {
-                    window.location.href = 'dashboard-kemahasiswaan.html';
+                    // PERBAIKAN FINAL: Gunakan replace() untuk sesi yang sudah ada
+                    window.location.replace('dashboard-kemahasiswaan.html');
                 }
             }
         };
