@@ -15,7 +15,7 @@
 
     <script>
         const firebaseConfig = {
-          apiKey: "AIzaSyBWH491KDjzgpG0i_PeVDq4t5RPx7sSFMs",
+          apiKey: "AIzaSyBWH491KDjzgpG0i_PeVDq4t5RPx7sSEMs",
           authDomain: "penilaian-ormawa.firebaseapp.com",
           projectId: "penilaian-ormawa",
           storageBucket: "penilaian-ormawa.appspot.com",
@@ -29,7 +29,7 @@
     </script>
     
     <style>
-        /* [GAYA KHUSUS DASHBOARD - MEMASTIKAN FLEXBOX UTAMA BERFUNGSI] */
+        /* [GAYA UTAMA - MEMASTIKAN LAYOUT SIDEBAR DAN KONTEN SEJAJAR] */
         body { 
             background-color: #f4f7f9; 
             min-height: 100vh;
@@ -171,8 +171,7 @@
                                 </tr>
                             </thead>
                             <tbody id="laporanList">
-                                <tr><td colspan="5" class="text-success fw-bold">Tidak ada laporan yang menunggu verifikasi.</td></tr>
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -185,7 +184,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Variabel Firebase sudah diinisialisasi di <head>
+        // Variabel Firebase (app, auth, db) sudah diinisialisasi di <head>
 
         const loadingMessage = document.getElementById('loadingMessage');
         const laporanList = document.getElementById('laporanList');
@@ -272,29 +271,28 @@
             }
         }
 
-        // --- PENGAMANAN HALAMAN DAN PEMERIKSAAN ROLE ---
-        const checkAuthAndRole = async () => {
-            const user = auth.currentUser;
-
+        // --- PENGAMANAN HALAMAN & PERBAIKAN RACE CONDITION (FINAL FIX) ---
+        auth.onAuthStateChanged(async (user) => {
+            // 1. Jika tidak ada user (terjadi jika sesi habis atau logout), alihkan
             if (!user) {
                 window.location.replace('index.html');
                 return;
             }
             
+            // 2. Ambil Role dari Firestore, dan TUNGGU hasilnya (menggunakan await)
             const doc = await db.collection('user_roles').doc(user.uid).get();
             const userRole = doc.exists ? doc.data().role : null;
 
+            // 3. Periksa Role
             if (userRole !== 'kemahasiswaan') {
+                // Jika role salah, paksa logout dan alihkan
                 await auth.signOut();
                 window.location.replace('index.html');
                 return;
             }
 
+            // 4. Jika Autentikasi dan Role benar, Muat Data
             loadLaporan();
-        };
-        
-        auth.onAuthStateChanged((user) => {
-            checkAuthAndRole();
         });
     </script>
 </body>
