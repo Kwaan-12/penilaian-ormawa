@@ -29,15 +29,92 @@
     </script>
     
     <style>
-        /* [GAYA KHUSUS DASHBOARD] */
-        body { background-color: #f4f7f9; } 
+        /* [GAYA KHUSUS DASHBOARD - MEMASTIKAN FLEXBOX UTAMA BERFUNGSI] */
+        body { 
+            background-color: #f4f7f9; 
+            /* PENTING: Atur 100% tinggi viewport di sini */
+            min-height: 100vh;
+            display: flex; /* <-- Wajib agar d-flex di dalam body bekerja */
+            width: 100%;
+        } 
+        
+        .sidebar {
+            width: 280px; 
+            min-height: 100vh;
+            background-color: #212529; 
+            color: #fff;
+            padding-top: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.1); 
+            transition: width 0.3s;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 30px; 
+        }
         /* ... (Gaya CSS lain) ... */
+        .sidebar a {
+            color: #adb5bd; 
+            padding: 10px 20px;
+            display: block;
+            text-decoration: none;
+            border-radius: 8px; 
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar a:hover, .sidebar .active > a {
+            background-color: #343a40; 
+            color: #ffffff;
+        }
+        .sidebar .parent-menu {
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            padding: 15px 20px 5px;
+            text-transform: uppercase;
+        }
+        .nav-link i {
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+
+        .sidebar .profile-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #343a40;
+            margin-bottom: 20px;
+        }
+        .sidebar .profile-header img.logo-header {
+            max-width: 90%; 
+            height: auto; 
+            border: none; 
+            padding: 10px;
+            background-color: white; 
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+        
+        .stat-main-figure {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 5px; 
+        }
+        .stat-detail {
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            line-height: 1.2;
+            flex-grow: 1;
+        }
+        .stat-card i {
+            font-size: 3rem !important; 
+            margin-right: 15px;
+            min-width: 50px; 
+        }
     </style>
 </head>
 
 <body>
-
-    <div class="d-flex">
+    <div class="d-flex"> 
         <div class="sidebar d-flex flex-column">
             
             <div class="profile-header text-center">
@@ -93,6 +170,7 @@
                                 </tr>
                             </thead>
                             <tbody id="laporanList">
+                                <tr><td colspan="5" class="text-success fw-bold">Tidak ada laporan yang menunggu verifikasi.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -214,7 +292,6 @@
             loadLaporan();
         };
         
-        // Panggil checkAuthAndRole setelah Auth selesai memuat
         auth.onAuthStateChanged((user) => {
             checkAuthAndRole();
         });
