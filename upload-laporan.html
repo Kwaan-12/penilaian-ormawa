@@ -10,8 +10,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.9.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.9.1/firebase-storage-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -26,7 +26,7 @@
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth();
         const db = app.firestore();
-        const storage = app.storage(); // Inisialisasi Storage
+        const storage = app.storage(); 
     </script>
     
     <style>
@@ -37,6 +37,7 @@
             display: flex;
             width: 100%;
         } 
+        /* ... (Gaya CSS lain yang sama dengan dashboard-prodi.html) ... */
         .sidebar {
             width: 280px; 
             min-height: 100vh;
@@ -50,7 +51,6 @@
             flex-grow: 1;
             padding: 30px; 
         }
-        /* ... (Gaya Navigasi, Header Logo, dan lainnya) ... */
         .sidebar a {
             color: #adb5bd; 
             padding: 10px 20px;
@@ -74,6 +74,7 @@
             margin-right: 15px;
             font-size: 1.1rem;
         }
+
         .sidebar .profile-header {
             padding: 0 20px 20px;
             border-bottom: 1px solid #343a40;
@@ -150,14 +151,40 @@
                     <form id="uploadForm">
                         
                         <div class="mb-4">
-                            <label for="namaKegiatan" class="form-label fw-bold"><i class="bi bi-tag-fill me-1 text-primary"></i> Nama Kegiatan</label>
-                            <input type="text" id="namaKegiatan" class="form-control form-control-lg" placeholder="Masukkan nama kegiatan" required>
+                            <label for="namaOrmawa" class="form-label fw-bold"><i class="bi bi-building-fill me-1 text-primary"></i> Nama Ormawa</label>
+                            <input type="text" id="namaOrmawa" class="form-control form-control-lg" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="pembina" class="form-label fw-bold"><i class="bi bi-person-badge-fill me-1 text-primary"></i> Pembina</label>
+                            <input type="text" id="pembina" class="form-control form-control-lg" required>
                         </div>
                         
                         <div class="mb-4">
-                            <label for="fileInput" class="form-label fw-bold"><i class="bi bi-folder-fill me-1 text-primary"></i> Pilih File Laporan</label>
-                            <input type="file" id="fileInput" class="form-control" accept=".pdf, .doc, .docx" required>
-                            <div class="form-text mt-2 text-info"><i class="bi bi-check-circle-fill me-1"></i> Format yang diterima: PDF, DOC, DOCX. Maksimal ukuran 5MB.</div>
+                            <label for="namaKegiatan" class="form-label fw-bold"><i class="bi bi-tag-fill me-1 text-primary"></i> Nama Kegiatan</label>
+                            <input type="text" id="namaKegiatan" class="form-control form-control-lg" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="tanggalMulai" class="form-label fw-bold"><i class="bi bi-calendar-event me-1 text-primary"></i> Tanggal Mulai</label>
+                            <input type="date" id="tanggalMulai" class="form-control form-control-lg" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="tanggalSelesai" class="form-label fw-bold"><i class="bi bi-calendar-check me-1 text-primary"></i> Tanggal Selesai</label>
+                            <input type="date" id="tanggalSelesai" class="form-control form-control-lg" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="rpkFile" class="form-label fw-bold"><i class="bi bi-file-earmark-arrow-up-fill me-1 text-primary"></i> RPK (PDF/DOCX)</label>
+                            <input type="file" id="rpkFile" class="form-control" accept=".pdf,.doc,.docx" required>
+                            <div class="form-text mt-2 text-info">File RPK (Rencana Pelaksanaan Kegiatan)</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="lpjFile" class="form-label fw-bold"><i class="bi bi-file-earmark-text-fill me-1 text-primary"></i> LPJ (PDF/DOCX)</label>
+                            <input type="file" id="lpjFile" class="form-control" accept=".pdf,.doc,.docx" required>
+                            <div class="form-text mt-2 text-info">File LPJ (Laporan Pertanggung Jawaban)</div>
                         </div>
                         
                         <div class="d-flex justify-content-end pt-3">
@@ -177,54 +204,73 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Variabel Firebase (app, auth, db, storage) sudah diinisialisasi di <head>
+        // Variabel Firebase sudah diinisialisasi di <head>
 
-        const fileInput = document.getElementById('fileInput');
+        const fileInputRpk = document.getElementById('rpkFile');
+        const fileInputLpj = document.getElementById('lpjFile');
         const uploadForm = document.getElementById('uploadForm');
         const messageElement = document.getElementById('message');
         const uploadButton = document.getElementById('uploadButton');
         
+        // --- Fungsi Upload File (Digunakan untuk RPK dan LPJ) ---
+        const uploadFile = async (file, name, userUid) => {
+            const filePath = `laporan/${userUid}/${Date.now()}_${name}_${file.name}`; 
+            const storageRef = storage.ref().child(filePath);
+            
+            const snapshot = await storageRef.put(file);
+            return snapshot.ref.getDownloadURL();
+        };
+
         // --- LOGIKA UPLOAD FIREBASE ---
         uploadForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
             const user = auth.currentUser;
-            if (!user) { return; } // Pencegahan ekstra
-            
-            const namaKegiatan = document.getElementById('namaKegiatan').value;
-            const file = fileInput.files[0];
+            if (!user) { return; } 
 
-            if (!file) {
+            // 1. Ambil Data Formulir
+            const data = {
+                namaOrmawa: document.getElementById('namaOrmawa').value,
+                pembina: document.getElementById('pembina').value,
+                namaKegiatan: document.getElementById('namaKegiatan').value,
+                tanggalMulai: document.getElementById('tanggalMulai').value,
+                tanggalSelesai: document.getElementById('tanggalSelesai').value,
+                rpkFile: fileInputRpk.files[0],
+                lpjFile: fileInputLpj.files[0]
+            };
+
+            if (!data.rpkFile || !data.lpjFile) {
                 messageElement.className = 'mt-4 p-3 rounded text-center fw-bold bg-danger text-white d-block';
-                messageElement.textContent = '❌ Silakan pilih file sebelum mengirim.';
+                messageElement.textContent = '❌ Kedua file (RPK dan LPJ) wajib diunggah.';
                 return;
             }
 
             messageElement.className = 'mt-4 p-3 rounded text-center fw-bold bg-info text-white d-block';
             messageElement.textContent = '⏳ Sedang mengunggah file dan data...';
             uploadButton.disabled = true; 
-            
-            const filePath = `laporan/${user.uid}/${Date.now()}_${file.name}`; 
-            const storageRef = storage.ref().child(filePath);
 
             try {
-                // 1. UPLOAD FILE KE FIREBASE STORAGE
-                const snapshot = await storageRef.put(file);
-                const fileUrl = await snapshot.ref.getDownloadURL();
-
-                // 2. SIMPAN METADATA KE FIRESTORE
+                // 2. UPLOAD 2 FILE SECARA ASINKRON (SERIES)
+                const rpkUrl = await uploadFile(data.rpkFile, 'RPK', user.uid);
+                const lpjUrl = await uploadFile(data.lpjFile, 'LPJ', user.uid);
+                
+                // 3. SIMPAN METADATA KE FIRESTORE
                 const laporanRef = db.collection('laporan');
                 await laporanRef.add({
-                    namaKegiatan: namaKegiatan,
-                    fileURL: fileUrl,
-                    namaFile: file.name,
+                    namaOrmawa: data.namaOrmawa,
+                    pembina: data.pembina,
+                    namaKegiatan: data.namaKegiatan,
+                    tanggalMulai: data.tanggalMulai,
+                    tanggalSelesai: data.tanggalSelesai,
+                    rpkURL: rpkUrl,
+                    lpjURL: lpjUrl,
                     status: 'Pending',
                     tanggalUpload: firebase.firestore.FieldValue.serverTimestamp(),
                     uploadedBy: user.uid
                 });
 
                 messageElement.className = 'mt-4 p-3 rounded text-center fw-bold bg-success text-white d-block';
-                messageElement.textContent = `✅ Upload Berhasil! Laporan kegiatan "${namaKegiatan}" telah tersimpan.`;
+                messageElement.textContent = `✅ Upload Berhasil! Laporan kegiatan "${data.namaKegiatan}" telah tersimpan.`;
                 uploadForm.reset();
 
             } catch (error) {
@@ -251,8 +297,6 @@
                 window.location.replace('index.html');
                 return;
             }
-            
-            // Jika Autentikasi dan Role benar, kode upload siap
         });
     </script>
 </body>
