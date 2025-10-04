@@ -49,7 +49,7 @@
                 
                 <div class="mb-3 input-group input-group-lg">
                     <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                    <input type="text" id="emailInput" class="form-control" placeholder="Username (misal: hmti)" required>
+                    <input type="text" id="emailInput" class="form-control" placeholder="Email (misal: hmti@prodi.ac.id)" required>
                 </div>
                 
                 <div class="mb-4 input-group input-group-lg">
@@ -128,31 +128,31 @@
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault(); 
 
-            // *** PERBAIKAN: Gunakan nilai input sebagai USERNAME, bukan EMAIL ***
-            const username = emailInput.value.trim(); 
+            // Parse SDK menerima username atau email
+            const email = emailInput.value.trim(); 
             const password = passwordInput.value;
 
             messageElement.classList.add('d-none');
             
-            if (!username || !password) return showMessage('Semua kolom wajib diisi.', 'danger');
+            if (!email || !password) return showMessage('Semua kolom wajib diisi.', 'danger');
             
             showMessage('Memproses login...', 'info');
 
             try {
-                // OTENTIKASI BACK4APP (Log In)
-                // Parse.User.logIn(username, password)
-                const user = await Parse.User.logIn(username, password); 
+                // OTENTIKASI BACK4APP: Login menggunakan email dan password
+                const user = await Parse.User.logIn(email, password); 
                 
                 showMessage(`Login Berhasil! Mengalihkan...`, 'success');
                 redirectToDashboard(user);
 
             } catch (error) {
                 console.error("Back4App Login Failed:", error);
-                // Error 101 adalah 'Invalid credentials'
-                if (error.code === 101) {
-                     showMessage(`Login Gagal: Username atau Password salah.`, 'danger');
+                
+                // Error 101 adalah 'Invalid credentials', tapi kita berikan pesan 'unauthorized' yang spesifik
+                if (error.message.includes('unauthorized') || error.code === 101) {
+                     showMessage(`Login Gagal: Email/Password salah atau Izin akses (CLP) terkunci.`, 'danger');
                 } else {
-                     showMessage(`Login Gagal: ${error.message || 'Koneksi atau Permissions Error.'}`, 'danger');
+                     showMessage(`Login Gagal: ${error.message || 'Koneksi Error.'}`, 'danger');
                 }
             }
         });
