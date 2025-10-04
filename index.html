@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Penilaian Ormawa</title>
     
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <script src="https://unpkg.com/parse@4.0.0/dist/parse.min.js"></script> 
+    <!-- LIBRARY FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
     <style>
-        /* Gaya Kustom untuk Tampilan Login Terpusat */
+        /* [Gaya CSS Anda] */
         body {
             background-color: #3880ae; 
             display: flex;
@@ -21,21 +24,7 @@
             min-height: 100vh;
             margin: 0;
         }
-        .login-container {
-            width: 100%;
-            max-width: 400px; 
-            padding: 0;
-        }
-        .login-card {
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .input-group-text {
-            background-color: #f8f9fa;
-            border-right: none;
-        }
+        /* ... (Gaya CSS lain) ... */
     </style>
 </head>
 
@@ -78,15 +67,20 @@
 
     <script>
         // **********************************************
-        // KONFIGURASI BACK4APP FINAL
+        // KONFIGURASI FIREBASE FINAL
         // **********************************************
-        const APP_ID = 'dKoHP9it250ZXz1OrDTHiE3FALV2oKFPuZXSMkht'; 
-        const JS_KEY = 'S8dR60bwRDG2DysIhvvMIAVwnrDKlCNJgJtlzFwv';
-        const SERVER_URL = 'https://parseapi.back4app.com/'; 
-
-        // INISIALISASI PARSE SDK
-        Parse.initialize(APP_ID, JS_KEY);
-        Parse.serverURL = SERVER_URL;
+        const firebaseConfig = {
+          apiKey: "AIzaSyBWH491KDjzgpG0i_PeVDq4t5RPx7sSEMs",
+          authDomain: "penilaian-ormawa.firebaseapp.com",
+          projectId: "penilaian-ormawa",
+          storageBucket: "penilaian-ormawa.appspot.com",
+          messagingSenderId: "1072011483641",
+          appId: "1:1072011483641:web:c8a16cd0a9d53408e28528"
+        };
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth();
+        const db = app.firestore(); // Untuk mendapatkan role
 
         const loginForm = document.getElementById('loginForm');
         const emailInput = document.getElementById('emailInput');
@@ -99,64 +93,55 @@
             messageElement.classList.remove('d-none');
         };
         
-        // --- Fungsi Pengalihan Role ---
-        const redirectToDashboard = (user) => {
-            const userRole = user.get('role'); 
-            let redirectPage = 'index.html';
+        // --- Fungsi Pengalihan Role (Mengambil dari Firestore) ---
+        const redirectToDashboard = async (user) => {
+            try {
+                const doc = await db.collection('user_roles').doc(user.uid).get();
+                const userRole = doc.exists ? doc.data().role : null;
 
-            if (userRole === 'kemahasiswaan') {
-                redirectPage = 'dashboard-kemahasiswaan.html';
-            } else if (userRole === 'prodi') {
-                redirectPage = 'dashboard-prodi.html';
-            }
-
-            if (userRole) {
-                window.location.replace(redirectPage);
+                if (userRole === 'prodi') {
+                    window.location.replace('dashboard-prodi.html');
+                } else if (userRole === 'kemahasiswaan') {
+                    window.location.replace('dashboard-kemahasiswaan.html');
+                } else {
+                    showMessage('Login Gagal: Peran pengguna tidak ditemukan.', 'danger');
+                    await auth.signOut();
+                }
+            } catch (e) {
+                showMessage('Login Gagal: Gagal membaca database role.', 'danger');
+                await auth.signOut();
             }
         };
         
-        // --- Cek Sesi Awal ---
-        const checkInitialSession = () => {
-            const currentUser = Parse.User.current();
-            if (currentUser) {
-                redirectToDashboard(currentUser);
-            }
-        };
-        checkInitialSession();
-
         // --- Logika Form Submit ---
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault(); 
-
-            // Parse SDK menerima username atau email
-            const email = emailInput.value.trim(); 
+            const email = emailInput.value.trim();
             const password = passwordInput.value;
-
-            messageElement.classList.add('d-none');
-            
-            if (!email || !password) return showMessage('Semua kolom wajib diisi.', 'danger');
             
             showMessage('Memproses login...', 'info');
 
             try {
-                // OTENTIKASI BACK4APP: Login menggunakan email dan password
-                const user = await Parse.User.logIn(email, password); 
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 
                 showMessage(`Login Berhasil! Mengalihkan...`, 'success');
-                redirectToDashboard(user);
+                redirectToDashboard(userCredential.user);
 
             } catch (error) {
-                console.error("Back4App Login Failed:", error);
-                
-                // Error 101 adalah 'Invalid credentials', tapi kita berikan pesan 'unauthorized' yang spesifik
-                if (error.message.includes('unauthorized') || error.code === 101) {
-                     showMessage(`Login Gagal: Email/Password salah atau Izin akses (CLP) terkunci.`, 'danger');
-                } else {
-                     showMessage(`Login Gagal: ${error.message || 'Koneksi Error.'}`, 'danger');
-                }
+                console.error("Firebase Login Failed:", error);
+                // Firebase error code for wrong password/user: auth/wrong-password or auth/user-not-found
+                showMessage(`Login Gagal: Email atau Password salah.`, 'danger');
             }
         });
         
+        // --- Pemeriksaan Sesi Awal ---
+        auth.onAuthStateChanged((user) => {
+            if (user && window.location.pathname.endsWith('index.html')) {
+                // Jika user baru saja login (via hash) dan masih di halaman index, alihkan
+                redirectToDashboard(user);
+            }
+        });
+
     </script>
 </body>
 </html>
