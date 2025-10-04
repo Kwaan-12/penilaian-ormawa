@@ -96,8 +96,8 @@
             messageElement.classList.remove('d-none');
         };
         
-        // --- SOLUSI FINAL: SESSION LISTENER ---
-        // Ini akan terpicu secara otomatis saat sesi dibuat (setelah login)
+        // --- SOLUSI FINAL: SESSION LISTENER (SATU-SATUNYA PENGALIH) ---
+        // Ini adalah cara paling handal untuk menangani pengalihan pada static sites.
         supabase.auth.onAuthStateChange((event, session) => {
             if (session) {
                 const userRole = session.user.user_metadata.role;
@@ -142,13 +142,11 @@
                 showMessage(`Login Gagal: Username atau Password salah.`, 'danger');
             } else {
                 // Setelah login sukses, onAuthStateChange akan terpicu dan menangani pengalihan
-                // Tidak perlu kode redirect di sini
-                showMessage(`Login Berhasil! Mengalihkan...`, 'success');
+                showMessage(`Login Berhasil! Menunggu pengalihan...`, 'success');
             }
         });
         
-        // --- Pemeriksaan Sesi Awal (Mencegah Loop) ---
-        // Jika pengguna sudah login dan kembali ke index, segera alihkan
+        // --- Pemeriksaan Sesi Awal (Untuk Pengguna yang Sudah Login) ---
         const checkInitialSession = async () => {
              const { data: { user } } = await supabase.auth.getUser();
              if (user) {
@@ -167,6 +165,7 @@
              }
         };
         checkInitialSession(); 
+
     </script>
 </body>
 </html>
