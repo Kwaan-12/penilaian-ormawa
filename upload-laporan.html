@@ -7,18 +7,93 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script src="https://unpkg.com/parse@4.0.0/dist/parse.min.js"></script> 
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyBWH491KDjzgpG0i_PeVDq4t5RPx7sSEMs",
+          authDomain: "penilaian-ormawa.firebaseapp.com",
+          projectId: "penilaian-ormawa",
+          storageBucket: "penilaian-ormawa.appspot.com",
+          messagingSenderId: "1072011483641",
+          appId: "1:1072011483641:web:c8a16cd0a9d53408e28528"
+        };
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth();
+        const db = app.firestore();
+        const storage = app.storage(); // Inisialisasi Storage
+    </script>
     
     <style>
         /* [GAYA KHUSUS DASHBOARD] */
-        body { background-color: #f4f7f9; } 
-        /* ... (Gaya CSS lain) ... */
+        body { 
+            background-color: #f4f7f9; 
+            min-height: 100vh;
+            display: flex;
+            width: 100%;
+        } 
+        .sidebar {
+            width: 280px; 
+            min-height: 100vh;
+            background-color: #212529; 
+            color: #fff;
+            padding-top: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.1); 
+            transition: width 0.3s;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 30px; 
+        }
+        /* ... (Gaya Navigasi, Header Logo, dan lainnya) ... */
+        .sidebar a {
+            color: #adb5bd; 
+            padding: 10px 20px;
+            display: block;
+            text-decoration: none;
+            border-radius: 8px; 
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar a:hover, .sidebar .active > a {
+            background-color: #343a40; 
+            color: #ffffff;
+        }
+        .sidebar .parent-menu {
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            padding: 15px 20px 5px;
+            text-transform: uppercase;
+        }
+        .nav-link i {
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+        .sidebar .profile-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #343a40;
+            margin-bottom: 20px;
+        }
+        .sidebar .profile-header img.logo-header {
+            max-width: 90%; 
+            height: auto; 
+            border: none; 
+            padding: 10px;
+            background-color: white; 
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
     </style>
 </head>
 
 <body>
-
-    <div class="d-flex">
+    <div class="d-flex w-100"> 
         <div class="sidebar d-flex flex-column">
             
             <div class="profile-header text-center">
@@ -59,7 +134,7 @@
             </a>
         </div>
         
-        <div class="main-content">
+        <div class="main-content flex-grow-1">
             <div class="container-fluid">
                 <h1 class="fw-light text-dark mb-4">Upload File Laporan</h1>
                 <nav aria-label="breadcrumb">
@@ -102,44 +177,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // **********************************************
-        // KONFIGURASI BACK4APP FINAL
-        // **********************************************
-        const APP_ID = 'dKoHP9it250ZXz1OrDTHiE3FALV2oKFPuZXSMkht'; 
-        const JS_KEY = 'S8dR60bwRDG2DysIhvvMIAVwnrDKlCNJgJtlzFwv';
-        const SERVER_URL = 'https://parseapi.back4app.com/'; 
-
-        Parse.initialize(APP_ID, JS_KEY);
-        Parse.serverURL = SERVER_URL;
+        // Variabel Firebase (app, auth, db, storage) sudah diinisialisasi di <head>
 
         const fileInput = document.getElementById('fileInput');
         const uploadForm = document.getElementById('uploadForm');
         const messageElement = document.getElementById('message');
         const uploadButton = document.getElementById('uploadButton');
-
-        // --- PENGAMANAN HALAMAN DAN PEMERIKSAAN ROLE ---
-        const checkAuthAndRole = async () => {
-            const user = Parse.User.current();
-
-            if (!user) {
-                window.location.replace('index.html');
-                return;
-            }
-            
-            const userRole = user.get('role');
-            
-            if (userRole !== 'prodi') {
-                await Parse.User.logOut();
-                window.location.replace('index.html'); 
-                return;
-            }
-        };
-        checkAuthAndRole();
-
-        // --- LOGIKA UPLOAD FILE KE BACK4APP ---
+        
+        // --- LOGIKA UPLOAD FIREBASE ---
         uploadForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
+            const user = auth.currentUser;
+            if (!user) { return; } // Pencegahan ekstra
+            
             const namaKegiatan = document.getElementById('namaKegiatan').value;
             const file = fileInput.files[0];
 
@@ -152,24 +203,25 @@
             messageElement.className = 'mt-4 p-3 rounded text-center fw-bold bg-info text-white d-block';
             messageElement.textContent = '⏳ Sedang mengunggah file dan data...';
             uploadButton.disabled = true; 
+            
+            const filePath = `laporan/${user.uid}/${Date.now()}_${file.name}`; 
+            const storageRef = storage.ref().child(filePath);
 
             try {
-                // 1. BUAT OBJECT PARSE FILE 
-                const parseFile = new Parse.File(file.name, file);
-                
-                // 2. SIMPAN FILE (Unggah ke Back4App Storage)
-                await parseFile.save(); 
+                // 1. UPLOAD FILE KE FIREBASE STORAGE
+                const snapshot = await storageRef.put(file);
+                const fileUrl = await snapshot.ref.getDownloadURL();
 
-                // 3. SIMPAN METADATA (Class Laporan)
-                const Laporan = Parse.Object.extend('Laporan');
-                const newLaporan = new Laporan();
-                
-                newLaporan.set('namaKegiatan', namaKegiatan);
-                newLaporan.set('fileURL', parseFile.url()); // Ambil URL file
-                newLaporan.set('namaFile', file.name);
-                newLaporan.set('status', 'Pending'); 
-                
-                await newLaporan.save();
+                // 2. SIMPAN METADATA KE FIRESTORE
+                const laporanRef = db.collection('laporan');
+                await laporanRef.add({
+                    namaKegiatan: namaKegiatan,
+                    fileURL: fileUrl,
+                    namaFile: file.name,
+                    status: 'Pending',
+                    tanggalUpload: firebase.firestore.FieldValue.serverTimestamp(),
+                    uploadedBy: user.uid
+                });
 
                 messageElement.className = 'mt-4 p-3 rounded text-center fw-bold bg-success text-white d-block';
                 messageElement.textContent = `✅ Upload Berhasil! Laporan kegiatan "${namaKegiatan}" telah tersimpan.`;
@@ -178,10 +230,29 @@
             } catch (error) {
                 console.error('Terjadi kesalahan upload:', error);
                 messageElement.className = 'mt-4 p-3 rounded text-center fw-bold bg-danger text-white d-block';
-                messageElement.textContent = `❌ Upload Gagal: ${error.message}. Cek koneksi atau Permissions.`;
+                messageElement.textContent = `❌ Upload Gagal: ${error.message}. Cek Firebase Storage Rules.`;
             } finally {
                 uploadButton.disabled = false; 
             }
+        });
+
+        // --- PENGAMANAN HALAMAN DAN PEMERIKSAAN ROLE ---
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.replace('index.html');
+                return;
+            }
+            
+            const doc = await db.collection('user_roles').doc(user.uid).get();
+            const userRole = doc.exists ? doc.data().role : null;
+
+            if (userRole !== 'prodi') {
+                await auth.signOut();
+                window.location.replace('index.html');
+                return;
+            }
+            
+            // Jika Autentikasi dan Role benar, kode upload siap
         });
     </script>
 </body>
