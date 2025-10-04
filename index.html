@@ -6,10 +6,9 @@
     <title>Login - Penilaian Ormawa</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
+    <script src="https://unpkg.com/parse@4.0.0/dist/parse.min.js"></script> 
     
     <style>
         /* Gaya Kustom untuk Tampilan Login Terpusat */
@@ -21,21 +20,7 @@
             min-height: 100vh;
             margin: 0;
         }
-        .login-container {
-            width: 100%;
-            max-width: 400px; 
-            padding: 0;
-        }
-        .login-card {
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .input-group-text {
-            background-color: #f8f9fa;
-            border-right: none;
-        }
+        /* ... (Gaya CSS Anda yang lain) ... */
     </style>
 </head>
 
@@ -45,16 +30,16 @@
             <h1 class="fw-normal mb-1">Selamat Datang!</h1>
             <p class="text-muted mb-4">Silakan login untuk mengakses dashboard.</p>
 
-            <form action="#" method="GET"> 
+            <form action="#" method="GET" id="loginForm"> 
                 
                 <div class="mb-3 input-group input-group-lg">
                     <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                    <input type="text" class="form-control" placeholder="Username (Gunakan Email Supabase)" required>
+                    <input type="text" id="emailInput" class="form-control" placeholder="Username/Email" required>
                 </div>
                 
                 <div class="mb-4 input-group input-group-lg">
                     <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                    <input type="password" class="form-control" placeholder="Password" required>
+                    <input type="password" id="passwordInput" class="form-control" placeholder="Password" required>
                 </div>
                 
                 <div class="d-grid mb-4">
@@ -78,16 +63,19 @@
 
     <script>
         // **********************************************
-        // KREEDENTIAL ANDA
+        // KONFIGURASI BACK4APP FINAL
         // **********************************************
-        const SUPABASE_URL = 'https://slyuhkzzkovgpwdqwfaw.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNseXVoa3p6a292Z3B3ZHF3ZmF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NDY5MzYsImV4cCI6MjA3NTEyMjkzNn0.u5WKU91G-cT3pUUrzTVuMR-g3HWadsl9mlcQXMA4DYM'; 
-        
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const APP_ID = 'dKoHP9it250ZXz1OrDTHiE3FALV2oKFPuZXSMkht'; 
+        const JS_KEY = 'S8dR60bwRDG2DysIhvvMIAVwnrDKlCNJgJtlzFwv';
+        const SERVER_URL = 'https://parseapi.back4app.com/'; 
 
-        const form = document.querySelector('form');
-        const usernameInput = document.querySelector('input[placeholder^="Username"]');
-        const passwordInput = document.querySelector('input[placeholder="Password"]');
+        // INISIALISASI PARSE SDK
+        Parse.initialize(APP_ID, JS_KEY);
+        Parse.serverURL = SERVER_URL;
+
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
         const messageElement = document.getElementById('messageElement');
 
         const showMessage = (text, type) => {
@@ -96,76 +84,57 @@
             messageElement.classList.remove('d-none');
         };
         
-        // --- SOLUSI FINAL: SESSION LISTENER (SATU-SATUNYA PENGALIH) ---
-        // Ini adalah cara paling handal untuk menangani pengalihan pada static sites.
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                const userRole = session.user.user_metadata.role;
-                let redirectPage;
+        // --- Fungsi Pengalihan Role ---
+        const redirectToDashboard = (user) => {
+            const userRole = user.get('role'); 
+            let redirectPage = 'index.html';
 
-                if (userRole === 'prodi') {
-                    redirectPage = 'dashboard-prodi.html';
-                } else if (userRole === 'kemahasiswaan') {
-                    redirectPage = 'dashboard-kemahasiswaan.html';
-                }
-
-                if (redirectPage) {
-                    // Gunakan replace() untuk mencegah browser menyimpan riwayat loop
-                    window.location.replace(redirectPage);
-                }
+            if (userRole === 'kemahasiswaan') {
+                redirectPage = 'dashboard-kemahasiswaan.html';
+            } else if (userRole === 'prodi') {
+                redirectPage = 'dashboard-prodi.html';
             }
-        });
+
+            if (userRole) {
+                window.location.replace(redirectPage);
+            }
+        };
+        
+        // --- Cek Sesi Awal ---
+        const checkInitialSession = () => {
+            const currentUser = Parse.User.current();
+            if (currentUser) {
+                // Sesi ditemukan, alihkan segera
+                redirectToDashboard(currentUser);
+            }
+        };
+        checkInitialSession();
 
         // --- Logika Form Submit ---
-        form.addEventListener('submit', async (event) => {
+        loginForm.addEventListener('submit', async (event) => {
             event.preventDefault(); 
 
-            const email = usernameInput.value.trim();
+            const email = emailInput.value.trim();
             const password = passwordInput.value;
 
             messageElement.classList.add('d-none');
             
-            if (!email || !password) {
-                showMessage('Semua kolom wajib diisi.', 'danger');
-                return;
-            }
+            if (!email || !password) return showMessage('Semua kolom wajib diisi.', 'danger');
             
             showMessage('Memproses login...', 'info');
 
-            const { error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+            try {
+                // OTENTIKASI BACK4APP (Log In)
+                const user = await Parse.User.logIn(email, password);
+                
+                showMessage(`Login Berhasil! Mengalihkan...`, 'success');
+                redirectToDashboard(user);
 
-            if (error) {
-                console.error(error);
-                showMessage(`Login Gagal: Username atau Password salah.`, 'danger');
-            } else {
-                // Setelah login sukses, onAuthStateChange akan terpicu dan menangani pengalihan
-                showMessage(`Login Berhasil! Menunggu pengalihan...`, 'success');
+            } catch (error) {
+                console.error("Back4App Login Failed:", error);
+                showMessage(`Login Gagal: ${error.message || 'Koneksi atau kredensial salah.'}`, 'danger');
             }
         });
-        
-        // --- Pemeriksaan Sesi Awal (Untuk Pengguna yang Sudah Login) ---
-        const checkInitialSession = async () => {
-             const { data: { user } } = await supabase.auth.getUser();
-             if (user) {
-                 const userRole = user.user_metadata.role;
-                 let redirectPage;
-                 
-                 if (userRole === 'prodi') {
-                    redirectPage = 'dashboard-prodi.html';
-                 } else if (userRole === 'kemahasiswaan') {
-                    redirectPage = 'dashboard-kemahasiswaan.html';
-                 }
-                 
-                 if (redirectPage) {
-                     window.location.replace(redirectPage);
-                 }
-             }
-        };
-        checkInitialSession(); 
-
     </script>
 </body>
 </html>
