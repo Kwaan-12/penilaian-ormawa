@@ -173,13 +173,13 @@
         const laporanList = document.getElementById('laporanList');
         const statusMessage = document.getElementById('statusMessage');
 
-        // --- OTENTIKASI DAN PENGAMANAN HALAMAN (LOGIKA PERBAIKAN) ---
+        // --- OTENTIKASI DAN PENGAMANAN HALAMAN (LOGIKA PERBAIKAN FINAL) ---
         const checkAuthAndRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
-                // Jika tidak login, kembali ke halaman login baru (index.html)
-                window.location.href = 'index.html';
+                // Jika tidak login, kembali ke halaman login (index.html)
+                window.location.replace('index.html');
                 return;
             }
             
@@ -187,9 +187,9 @@
             
             // Verifikasi Role (Harusnya KEMAHASISWAAN)
             if (userRole !== 'kemahasiswaan') {
-                // Jika login tapi bukan KEMAHASISWAAN, alihkan ke dashboard PRODI
-                alert('Akses Ditolak. Anda bukan bagian Kemahasiswaan. Mengalihkan ke Dashboard Prodi.');
-                window.location.href = 'dashboard-prodi.html';
+                // Jika login tapi bukan KEMAHASISWAAN, hapus sesi untuk mencegah loop dan kembali ke login
+                await supabase.auth.signOut();
+                window.location.replace('index.html');
                 return;
             }
 
