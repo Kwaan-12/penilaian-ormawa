@@ -173,20 +173,22 @@
         const laporanList = document.getElementById('laporanList');
         const statusMessage = document.getElementById('statusMessage');
 
-        // --- OTENTIKASI DAN PENGAMANAN HALAMAN ---
+        // --- OTENTIKASI DAN PENGAMANAN HALAMAN (LOGIKA PERBAIKAN) ---
         const checkAuthAndRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
-                // *** PERBAIKAN PENGALIHAN KE NAMA FILE BARU (index.html sekarang adalah login) ***
+                // Jika tidak login, kembali ke halaman login baru (index.html)
                 window.location.href = 'index.html';
                 return;
             }
             
             const userRole = user.user_metadata.role;
+            
+            // Verifikasi Role (Harusnya KEMAHASISWAAN)
             if (userRole !== 'kemahasiswaan') {
+                // Jika login tapi bukan KEMAHASISWAAN, alihkan ke dashboard PRODI
                 alert('Akses Ditolak. Anda bukan bagian Kemahasiswaan. Mengalihkan ke Dashboard Prodi.');
-                // *** PERBAIKAN PENGALIHAN KE NAMA FILE BARU ***
                 window.location.href = 'dashboard-prodi.html';
                 return;
             }
